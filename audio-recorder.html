@@ -395,13 +395,12 @@
 
         return fetch(sendUrl, {
           method: 'POST',
+          mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload),
-          redirect: 'follow'
+          body: JSON.stringify(payload)
         });
       })
       .then(function(resp) {
-        if (!resp.ok) throw new Error('Erreur serveur ' + resp.status);
         showStatus('success', 'Compte rendu envoyé avec succès !');
         $('submitBtn').innerHTML = '✓ Envoyé';
         $('submitBtn').disabled = true;
