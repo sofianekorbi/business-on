@@ -359,10 +359,10 @@
             onRowData(data);
           }
         }
-        setTimeout(poll, 1000);
+        setTimeout(poll, 500);
       })
       .withFailureHandler(function() {
-        setTimeout(poll, 2000);
+        setTimeout(poll, 1500);
       })
       .getStoredRowData();
   }

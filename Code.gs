@@ -14,6 +14,7 @@ function openSidebar() {
 }
 
 // Trigger automatique : se déclenche à chaque changement de sélection
+// Optimisé : ne lit que les colonnes nécessaires pour la sidebar (rapide)
 function onSelectionChange(e) {
   try {
     var sheet = e.source.getActiveSheet();
@@ -29,11 +30,44 @@ function onSelectionChange(e) {
       return;
     }
 
-    var data = buildRowData_(sheet, row);
+    var data = buildRowDataLight_(sheet, row);
     PropertiesService.getScriptProperties().setProperty('sidebarData', JSON.stringify(data));
   } catch (err) {
     // Silencieux pour le trigger
   }
+}
+
+// Version légère : lit seulement les colonnes nécessaires pour la sidebar
+function buildRowDataLight_(sheet, row) {
+  var headers = getCachedHeaders_(sheet);
+  var lastCol = headers.length;
+  var values = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
+
+  var nom = '';
+  var email = '';
+  var societe = '';
+  var statut = '';
+
+  for (var i = 0; i < headers.length; i++) {
+    var h = headers[i];
+    if (h === 'PRENOM') nom = (values[i] || '').toString();
+    else if (h === 'Nom') nom = (nom ? nom + ' ' : '') + (values[i] || '').toString();
+    else if (h === 'E-mail') email = (values[i] || '').toString().trim();
+    else if (h === 'Société' || h === 'Societe') societe = (values[i] || '').toString().trim();
+    else if (h === 'STATUTS') statut = (values[i] || '').toString().trim();
+  }
+
+  return { row: row, nom: nom.trim(), email: email, societe: societe, statut: statut };
+}
+
+// Cache les headers pour éviter de relire la ligne 1 à chaque sélection
+var headersCache_ = null;
+function getCachedHeaders_(sheet) {
+  if (!headersCache_) {
+    var lastCol = sheet.getLastColumn();
+    headersCache_ = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  }
+  return headersCache_;
 }
 
 // Fonction interne : construit les données d'une ligne
