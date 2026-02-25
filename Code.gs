@@ -1,94 +1,135 @@
 function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  ui.createMenu('📞 Dupliquer la ligne')
-    .addItem('Dupliquer', 'nouvelAppel')
-    .addToUi();
-  ui.createMenu('🎙️ Générer CR')
-    .addItem('Générer', 'openCompteRendu')
+  SpreadsheetApp.getUi()
+    .createMenu('Business On')
+    .addItem('Ouvrir le panneau', 'openSidebar')
     .addToUi();
 }
 
-function nouvelAppel() {
-  var sheet = SpreadsheetApp.getActiveSheet();
-  if (sheet.getName() !== 'TRAVAIL') {
-    SpreadsheetApp.getUi().alert("Fonctionne uniquement sur l'onglet TRAVAIL.");
-    return;
-  }
-  var row = SpreadsheetApp.getActiveRange().getRow();
-  if (row <= 1) {
-    SpreadsheetApp.getUi().alert("Sélectionnez une ligne de données.");
-    return;
-  }
-  var lastCol = sheet.getLastColumn();
-  sheet.insertRowAfter(row);
-  sheet.getRange(row, 1, 1, lastCol).copyTo(sheet.getRange(row + 1, 1, 1, lastCol));
-  sheet.getRange(row + 1, 1, 1, lastCol).setBackground('#FFF2CC');
-  SpreadsheetApp.flush();
+function openSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
+    .setTitle('Business On');
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
-function openCompteRendu() {
+// Retourne les infos de la ligne sélectionnée
+function getSelectedRowData() {
   var sheet = SpreadsheetApp.getActiveSheet();
   if (sheet.getName() !== 'TRAVAIL') {
-    SpreadsheetApp.getUi().alert("Fonctionne uniquement sur l'onglet TRAVAIL.");
-    return;
+    return { error: 'wrong_sheet' };
   }
   var row = SpreadsheetApp.getActiveRange().getRow();
   if (row <= 1) {
-    SpreadsheetApp.getUi().alert("Sélectionnez une ligne de données.");
-    return;
+    return { error: 'header_row' };
   }
 
-  // Récupérer les headers + valeurs de la ligne
   var lastCol = sheet.getLastColumn();
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var values = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
 
-  // Construire l'objet de données
   var rowData = {};
   for (var i = 0; i < headers.length; i++) {
     if (headers[i]) rowData[headers[i]] = values[i];
   }
   rowData['_rowNumber'] = row;
 
-  // URL de la page externe + proxy GAS encodé en base64
+  var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
+  var email = (rowData['E-mail'] || '').toString().trim();
+  var societe = (rowData['Société'] || rowData['Societe'] || '').toString().trim();
+  var statut = (rowData['STATUTS'] || '').toString().trim();
+
+  return {
+    row: row,
+    nom: nom,
+    email: email,
+    societe: societe,
+    statut: statut,
+    rowData: rowData
+  };
+}
+
+// Duplique la ligne et met la date du jour
+function dupliquerLigne() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  if (sheet.getName() !== 'TRAVAIL') {
+    return { error: "Fonctionne uniquement sur l'onglet TRAVAIL." };
+  }
+  var row = SpreadsheetApp.getActiveRange().getRow();
+  if (row <= 1) {
+    return { error: "Sélectionnez une ligne de données." };
+  }
+
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  // Dupliquer
+  sheet.insertRowAfter(row);
+  sheet.getRange(row, 1, 1, lastCol).copyTo(sheet.getRange(row + 1, 1, 1, lastCol));
+  sheet.getRange(row + 1, 1, 1, lastCol).setBackground('#FFF2CC');
+
+  // Trouver la colonne "Date d'appel" et mettre la date du jour
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i] === "Date d'appel") {
+      sheet.getRange(row + 1, i + 1).setValue(new Date());
+      sheet.getRange(row + 1, i + 1).setNumberFormat('dd/MM/yyyy');
+      break;
+    }
+  }
+
+  // Vider le commentaire de la nouvelle ligne
+  for (var j = 0; j < headers.length; j++) {
+    if (headers[j] === 'Commentaire') {
+      sheet.getRange(row + 1, j + 1).setValue('');
+      break;
+    }
+  }
+
+  SpreadsheetApp.flush();
+
+  // Sélectionner la nouvelle ligne
+  sheet.getRange(row + 1, 1).activate();
+
+  return { success: true, newRow: row + 1 };
+}
+
+// Génère l'URL de la page d'enregistrement
+function getRecordingUrl() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  if (sheet.getName() !== 'TRAVAIL') {
+    return { error: "Fonctionne uniquement sur l'onglet TRAVAIL." };
+  }
+  var row = SpreadsheetApp.getActiveRange().getRow();
+  if (row <= 1) {
+    return { error: "Sélectionnez une ligne de données." };
+  }
+
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var values = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
+
+  var rowData = {};
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i]) rowData[headers[i]] = values[i];
+  }
+  rowData['_rowNumber'] = row;
+
   var EXTERNAL_PAGE = 'https://sofianekorbi.github.io/business-on/audio-recorder.html';
-  var proxyUrl = ScriptApp.getService().getUrl();
-  var proxyB64 = Utilities.base64Encode(proxyUrl);
   var rowDataB64 = Utilities.base64Encode(JSON.stringify(rowData));
 
   var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
   var email = (rowData['E-mail'] || '').toString().trim();
 
   var url = EXTERNAL_PAGE
-    + '?proxy=' + encodeURIComponent(proxyB64)
-    + '&rowData=' + encodeURIComponent(rowDataB64)
+    + '?rowData=' + encodeURIComponent(rowDataB64)
     + '&row=' + row
     + '&name=' + encodeURIComponent(nom)
     + '&email=' + encodeURIComponent(email);
 
-  // Ouvrir automatiquement dans un nouvel onglet + fallback lien cliquable
-  var html = HtmlService.createHtmlOutput(
-    '<html><body style="font-family:Google Sans,Arial,sans-serif;padding:20px;text-align:center;">' +
-    '<p id="msg" style="margin-bottom:16px;color:#374151;font-size:14px;">Ouverture en cours...</p>' +
-    '<a id="link" href="' + url.replace(/"/g, '&quot;') + '" target="_blank" ' +
-    'style="display:none;padding:12px 32px;background:#111827;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;" ' +
-    'onclick="google.script.host.close()">' +
-    '🎙️ Ouvrir l\'enregistreur</a>' +
-    '<p style="margin-top:12px;color:#9ca3af;font-size:11px;">Ligne ' + row + ' — ' + nom + '</p>' +
-    '<script>' +
-    'var w = window.open("' + url.replace(/"/g, '\\"') + '", "_blank");' +
-    'if (w) { google.script.host.close(); }' +
-    'else { document.getElementById("msg").textContent = "Le popup a été bloqué. Cliquez ci-dessous :"; document.getElementById("link").style.display = "inline-block"; }' +
-    '</script>' +
-    '</body></html>'
-  ).setWidth(400).setHeight(160);
-
-  SpreadsheetApp.getUi().showModalDialog(html, 'Générer le compte rendu');
+  return { url: url, row: row, nom: nom };
 }
 
 // Proxy doPost : reçoit les données de la page externe et forward à n8n
 function doPost(e) {
-  var WEBHOOK_URL = 'https://n8n.srv1353111.hstgr.cloud/webhook-test/26a15343-e911-4400-a918-b3cf06074f15';
+  var WEBHOOK_URL = 'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15';
 
   var response = UrlFetchApp.fetch(WEBHOOK_URL, {
     method: 'post',
@@ -107,7 +148,7 @@ function doPost(e) {
 
 function sendToWebhook(payload) {
   var response = UrlFetchApp.fetch(
-    'https://n8n.srv1353111.hstgr.cloud/webhook-test/26a15343-e911-4400-a918-b3cf06074f15',
+    'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15',
     {
       method: 'post',
       contentType: 'application/json',

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: #111827;
+      color: white;
+      padding: 16px 18px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .header p {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Contact card */
+    .contact-card {
+      background: #fff;
+      margin: 12px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+    .contact-card .row-badge {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      margin-bottom: 6px;
+    }
+    .contact-card .name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .contact-card .email {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+    .contact-card .meta-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .contact-card .tag {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 24px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; line-height: 1.5; }
+
+    /* Actions */
+    .actions {
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      justify-content: center;
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: #111827;
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) { background: #1f2937; }
+    .btn-secondary {
+      background: #fff;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+    .btn-secondary:hover:not(:disabled) { background: #f3f4f6; }
+
+    .btn .icon { font-size: 15px; }
+
+    /* Status */
+    .status {
+      margin: 8px 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      display: none;
+      text-align: center;
+    }
+    .status.visible { display: block; }
+    .status.success { background: #d1fae5; color: #065f46; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .status.info { background: #eff6ff; color: #1e40af; }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      padding: 12px;
+      flex-shrink: 0;
+    }
+    .refresh-btn {
+      width: 100%;
+      padding: 8px;
+      background: none;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover { border-color: #9ca3af; color: #6b7280; }
+
+    /* Loading */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .loading.visible { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Business On</h1>
+    <p>Panneau de gestion</p>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="icon">👆</div>
+    <p>Sélectionnez une ligne<br>dans l'onglet TRAVAIL</p>
+  </div>
+
+  <div id="contactCard" class="contact-card" style="display:none">
+    <span class="row-badge">Ligne <span id="rowNum">-</span></span>
+    <div class="name" id="contactName">-</div>
+    <div class="email" id="contactEmail">-</div>
+    <div class="meta-row">
+      <span class="tag" id="contactSociete" style="display:none"></span>
+      <span class="tag" id="contactStatut" style="display:none"></span>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">Chargement...</div>
+
+  <div id="actionsBlock" class="actions" style="display:none">
+    <button class="btn btn-secondary" id="btnDupliquer" onclick="dupliquer()">
+      <span class="icon">📋</span> Dupliquer la ligne
+    </button>
+    <button class="btn btn-primary" id="btnGenerer" onclick="genererCR()">
+      <span class="icon">🎙️</span> Générer le compte rendu
+    </button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="footer">
+    <button class="refresh-btn" onclick="refresh()">↻ Rafraîchir</button>
+  </div>
+
+<script>
+  var currentRow = null;
+  var pollInterval = null;
+
+  function showStatus(msg, type) {
+    var el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status visible ' + type;
+    if (type === 'success' || type === 'info') {
+      setTimeout(function() { el.className = 'status'; }, 3000);
+    }
+  }
+
+  function hideStatus() {
+    document.getElementById('status').className = 'status';
+  }
+
+  function setLoading(on) {
+    document.getElementById('loading').className = on ? 'loading visible' : 'loading';
+  }
+
+  function refresh() {
+    hideStatus();
+    setLoading(true);
+    google.script.run
+      .withSuccessHandler(onRowData)
+      .withFailureHandler(function(err) {
+        setLoading(false);
+        showStatus('Erreur : ' + err.message, 'error');
+      })
+      .getSelectedRowData();
+  }
+
+  function onRowData(data) {
+    setLoading(false);
+
+    if (!data || data.error === 'wrong_sheet') {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('emptyState').querySelector('p').innerHTML = 'Passez sur l\'onglet<br><b>TRAVAIL</b>';
+      document.getElementById('contactCard').style.display = 'none';
+      document.getElementById('actionsBlock').style.display = 'none';
+      currentRow = null;
+      return;
+    }
+
+    if (data.error === 'header_row') {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('emptyState').querySelector('p').innerHTML = 'Sélectionnez une ligne<br>dans l\'onglet TRAVAIL';
+      document.getElementById('contactCard').style.display = 'none';
+      document.getElementById('actionsBlock').style.display = 'none';
+      currentRow = null;
+      return;
+    }
+
+    currentRow = data.row;
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('contactCard').style.display = 'block';
+    document.getElementById('actionsBlock').style.display = 'flex';
+
+    document.getElementById('rowNum').textContent = data.row;
+    document.getElementById('contactName').textContent = data.nom || '-';
+    document.getElementById('contactEmail').textContent = data.email || '-';
+
+    var societeEl = document.getElementById('contactSociete');
+    if (data.societe) {
+      societeEl.textContent = data.societe;
+      societeEl.style.display = 'inline-block';
+    } else {
+      societeEl.style.display = 'none';
+    }
+
+    var statutEl = document.getElementById('contactStatut');
+    if (data.statut) {
+      statutEl.textContent = data.statut;
+      statutEl.style.display = 'inline-block';
+    } else {
+      statutEl.style.display = 'none';
+    }
+  }
+
+  function dupliquer() {
+    var btn = document.getElementById('btnDupliquer');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">⏳</span> Duplication...';
+    hideStatus();
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.error) {
+          showStatus(result.error, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
+          return;
+        }
+        showStatus('Ligne dupliquée → ligne ' + result.newRow, 'success');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
+        // Rafraîchir pour afficher la nouvelle ligne
+        setTimeout(refresh, 500);
+      })
+      .withFailureHandler(function(err) {
+        showStatus('Erreur : ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
+      })
+      .dupliquerLigne();
+  }
+
+  function genererCR() {
+    var btn = document.getElementById('btnGenerer');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">⏳</span> Ouverture...';
+    hideStatus();
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.error) {
+          showStatus(result.error, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
+          return;
+        }
+        // Ouvrir la page d'enregistrement
+        window.open(result.url, '_blank');
+        showStatus('Page ouverte pour la ligne ' + result.row, 'info');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
+      })
+      .withFailureHandler(function(err) {
+        showStatus('Erreur : ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
+      })
+      .getRecordingUrl();
+  }
+
+  // Auto-refresh toutes les 2 secondes pour détecter le changement de ligne
+  function startPolling() {
+    pollInterval = setInterval(function() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (!data) return;
+          if (data.error && currentRow !== null) {
+            onRowData(data);
+          } else if (data.row && data.row !== currentRow) {
+            onRowData(data);
+          }
+        })
+        .getSelectedRowData();
+    }, 2000);
+  }
+
+  // Init
+  refresh();
+  startPolling();
+</script>
+
+</body>
+</html>
