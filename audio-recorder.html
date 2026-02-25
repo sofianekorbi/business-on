@@ -201,9 +201,6 @@
 
   function b64(s) { try { return atob(decodeURIComponent(s)); } catch(e) { return ''; } }
 
-  var proxyUrl = params.get('proxy') ? b64(params.get('proxy')) : '';
-  var webhookUrl = params.get('webhook') ? b64(params.get('webhook')) : '';
-  var sendUrl = proxyUrl || webhookUrl;
   var rowNumber = params.get('row') || '';
   var contactName = decodeURIComponent(params.get('name') || '');
   var contactEmail = decodeURIComponent(params.get('email') || '');
@@ -214,7 +211,7 @@
     try { rowData = JSON.parse(b64(params.get('rowData'))); } catch(e) {}
   }
 
-  if (!sendUrl || !rowNumber) {
+  if (!rowNumber) {
     $('errorPage').classList.add('visible');
     return;
   }

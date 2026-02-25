@@ -349,20 +349,28 @@
       .getRecordingUrl();
   }
 
-  // Auto-refresh toutes les 2 secondes pour détecter le changement de ligne
+  // Auto-refresh pour détecter le changement de ligne
+  var pollBusy = false;
   function startPolling() {
     pollInterval = setInterval(function() {
+      if (pollBusy) return; // éviter les appels simultanés
+      pollBusy = true;
       google.script.run
         .withSuccessHandler(function(data) {
+          pollBusy = false;
           if (!data) return;
+          // Mise à jour si erreur alors qu'on a une ligne, ou si la ligne a changé
           if (data.error && currentRow !== null) {
             onRowData(data);
-          } else if (data.row && data.row !== currentRow) {
+          } else if (!data.error && data.row !== currentRow) {
             onRowData(data);
           }
         })
+        .withFailureHandler(function() {
+          pollBusy = false;
+        })
         .getSelectedRowData();
-    }, 2000);
+    }, 1500);
   }
 
   // Init
