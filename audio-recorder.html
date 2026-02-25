@@ -201,7 +201,9 @@
 
   function b64(s) { try { return atob(decodeURIComponent(s)); } catch(e) { return ''; } }
 
+  var proxyUrl = params.get('proxy') ? b64(params.get('proxy')) : '';
   var webhookUrl = params.get('webhook') ? b64(params.get('webhook')) : '';
+  var sendUrl = proxyUrl || webhookUrl;
   var rowNumber = params.get('row') || '';
   var contactName = decodeURIComponent(params.get('name') || '');
   var contactEmail = decodeURIComponent(params.get('email') || '');
@@ -212,7 +214,7 @@
     try { rowData = JSON.parse(b64(params.get('rowData'))); } catch(e) {}
   }
 
-  if (!webhookUrl || !rowNumber) {
+  if (!sendUrl || !rowNumber) {
     $('errorPage').classList.add('visible');
     return;
   }
@@ -391,10 +393,11 @@
           timestamp: new Date().toISOString()
         };
 
-        return fetch(webhookUrl, {
+        return fetch(sendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          redirect: 'follow'
         });
       })
       .then(function(resp) {

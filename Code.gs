@@ -50,17 +50,17 @@ function openCompteRendu() {
   }
   rowData['_rowNumber'] = row;
 
-  // URL de la page externe hébergée + webhook encodé en base64
+  // URL de la page externe + proxy GAS encodé en base64
   var EXTERNAL_PAGE = 'https://sofianekorbi.github.io/business-on/audio-recorder.html';
-  var WEBHOOK_URL = 'https://n8n.srv1353111.hstgr.cloud/webhook-test/26a15343-e911-4400-a918-b3cf06074f15';
-  var webhookB64 = Utilities.base64Encode(WEBHOOK_URL);
+  var proxyUrl = ScriptApp.getService().getUrl();
+  var proxyB64 = Utilities.base64Encode(proxyUrl);
   var rowDataB64 = Utilities.base64Encode(JSON.stringify(rowData));
 
   var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
   var email = (rowData['E-mail'] || '').toString().trim();
 
   var url = EXTERNAL_PAGE
-    + '?webhook=' + encodeURIComponent(webhookB64)
+    + '?proxy=' + encodeURIComponent(proxyB64)
     + '&rowData=' + encodeURIComponent(rowDataB64)
     + '&row=' + row
     + '&name=' + encodeURIComponent(nom)
@@ -84,6 +84,25 @@ function openCompteRendu() {
   ).setWidth(400).setHeight(160);
 
   SpreadsheetApp.getUi().showModalDialog(html, 'Générer le compte rendu');
+}
+
+// Proxy doPost : reçoit les données de la page externe et forward à n8n
+function doPost(e) {
+  var WEBHOOK_URL = 'https://n8n.srv1353111.hstgr.cloud/webhook-test/26a15343-e911-4400-a918-b3cf06074f15';
+
+  var response = UrlFetchApp.fetch(WEBHOOK_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: e.postData.contents,
+    muteHttpExceptions: true
+  });
+
+  var code = response.getResponseCode();
+  var output = ContentService.createTextOutput(
+    JSON.stringify({ status: code >= 200 && code < 300 ? 'ok' : 'error', code: code })
+  ).setMimeType(ContentService.MimeType.JSON);
+
+  return output;
 }
 
 function sendToWebhook(payload) {
