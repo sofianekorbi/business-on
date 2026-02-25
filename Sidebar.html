@@ -215,7 +215,6 @@
 
 <script>
   var currentRow = null;
-  var pollInterval = null;
 
   function showStatus(msg, type) {
     var el = document.getElementById('status');
@@ -349,33 +348,31 @@
       .getRecordingUrl();
   }
 
-  // Auto-refresh pour détecter le changement de ligne
-  var pollBusy = false;
-  function startPolling() {
-    pollInterval = setInterval(function() {
-      if (pollBusy) return; // éviter les appels simultanés
-      pollBusy = true;
-      google.script.run
-        .withSuccessHandler(function(data) {
-          pollBusy = false;
-          if (!data) return;
-          // Mise à jour si erreur alors qu'on a une ligne, ou si la ligne a changé
+  // Auto-refresh chaîné : attend la fin de chaque appel avant le suivant
+  function poll() {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (data) {
           if (data.error && currentRow !== null) {
             onRowData(data);
-          } else if (!data.error && data.row !== currentRow) {
-            onRowData(data);
+          } else if (!data.error) {
+            // Toujours mettre à jour pour refléter les changements de données
+            if (data.row !== currentRow) {
+              onRowData(data);
+            }
           }
-        })
-        .withFailureHandler(function() {
-          pollBusy = false;
-        })
-        .getSelectedRowData();
-    }, 1500);
+        }
+        setTimeout(poll, 1500);
+      })
+      .withFailureHandler(function() {
+        setTimeout(poll, 3000);
+      })
+      .getSelectedRowData();
   }
 
   // Init
   refresh();
-  startPolling();
+  setTimeout(poll, 2000);
 </script>
 
 </body>
