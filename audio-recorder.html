@@ -406,9 +406,7 @@
         $('recBtn').style.opacity = '0.4';
         $('fileInput').disabled = true;
 
-        setTimeout(function() {
-          if (confirm('Compte rendu envoyé ! Fermer cet onglet ?')) window.close();
-        }, 500);
+        setTimeout(function() { window.close(); }, 1500);
       })
       .catch(function(err) {
         showStatus('error', 'Échec : ' + err.message);
