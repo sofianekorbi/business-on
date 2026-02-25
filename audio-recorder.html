@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compte Rendu Audio</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .container { max-width: 540px; margin: 0 auto; padding: 24px 16px; }
+
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 1.4rem; font-weight: 700; }
+    .header .sub { color: #6b7280; font-size: .85rem; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .card .badge {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      margin-bottom: 6px;
+    }
+    .card h2 { font-size: 1.05rem; font-weight: 600; }
+    .card .meta { color: #6b7280; font-size: .85rem; margin-top: 2px; }
+
+    .section-title {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    /* Recorder */
+    .rec-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .rec-btn {
+      width: 68px; height: 68px; border-radius: 50%;
+      border: 3px solid #e5e7eb; background: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .rec-btn:hover { border-color: #dc2626; }
+    .rec-btn .dot {
+      width: 26px; height: 26px; background: #dc2626; border-radius: 50%; transition: all .2s;
+    }
+    .rec-btn.recording .dot { width: 18px; height: 18px; border-radius: 4px; }
+    .rec-btn.recording { border-color: #dc2626; animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(220,38,38,.3); }
+      70% { box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+      100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    }
+    .timer { font-variant-numeric: tabular-nums; font-size: 1.2rem; font-weight: 600; color: #374151; }
+    .timer.active { color: #dc2626; }
+    .hint { font-size: .78rem; color: #9ca3af; }
+    .preview { width: 100%; margin-top: 10px; display: none; }
+    .preview.visible { display: block; }
+    .preview audio { width: 100%; height: 36px; }
+    .discard-row { display: none; margin-top: 6px; text-align: center; }
+    .discard-row.visible { display: block; }
+
+    /* Upload */
+    .upload-zone {
+      border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px;
+      text-align: center; cursor: pointer; transition: all .2s; position: relative;
+    }
+    .upload-zone:hover { border-color: #2563eb; background: rgba(37,99,235,.03); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-zone .lbl { font-weight: 500; color: #374151; }
+    .upload-zone .hint { font-size: .75rem; color: #9ca3af; margin-top: 2px; }
+    .file-row {
+      display: none; align-items: center; gap: 8px;
+      padding: 10px; background: #f3f4f6; border-radius: 8px; margin-top: 10px;
+    }
+    .file-row.visible { display: flex; }
+    .file-row .fname { flex: 1; font-size: .85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-row .fsize { font-size: .72rem; color: #9ca3af; }
+    .file-row .remove { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 1.1rem; padding: 2px 6px; }
+    .file-row .remove:hover { color: #dc2626; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 20px; border-radius: 8px; font-size: .85rem; font-weight: 500;
+      border: none; cursor: pointer; transition: all .15s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: #111827; color: #fff; width: 100%; }
+    .btn-primary:hover:not(:disabled) { background: #1f2937; }
+    .btn-sm { padding: 5px 12px; font-size: .78rem; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover:not(:disabled) { background: #e5e7eb; }
+
+    /* Status */
+    .status {
+      display: none; padding: 12px 16px; border-radius: 8px;
+      margin-bottom: 16px; font-weight: 500; font-size: .85rem;
+      align-items: center; gap: 8px;
+    }
+    .status.visible { display: flex; }
+    .status.success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .status.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .status.sending { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid currentColor;
+      border-right-color: transparent; border-radius: 50%;
+      animation: spin .6s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-page { display: none; text-align: center; padding: 60px 20px; }
+    .error-page.visible { display: block; }
+    .error-page .big { font-size: 3rem; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="error-page" id="errorPage">
+    <div class="big">⚠️</div>
+    <h2>Lien invalide</h2>
+    <p style="color:#6b7280">Paramètres manquants. Relancez depuis Google Sheets.</p>
+  </div>
+
+  <div id="main" style="display:none">
+
+    <div class="header">
+      <h1>🎙️ Compte Rendu d'Appel</h1>
+      <p class="sub">Enregistrez votre vocal et/ou importez le fichier Quick Talk</p>
+    </div>
+
+    <div class="status" id="status"><span id="statusIcon"></span><span id="statusText"></span></div>
+
+    <div class="card">
+      <span class="badge">Ligne <span id="dRow">-</span></span>
+      <h2 id="dName">-</h2>
+      <div class="meta" id="dEmail">-</div>
+    </div>
+
+    <!-- Section 1: Vocal -->
+    <div class="card">
+      <div class="section-title">Enregistrement vocal</div>
+      <div class="rec-area">
+        <button class="rec-btn" id="recBtn" title="Enregistrer"><span class="dot"></span></button>
+        <div class="timer" id="timer">0:00</div>
+        <div class="hint" id="recHint">Cliquer pour enregistrer</div>
+      </div>
+      <div class="preview" id="preview"><audio id="audio" controls style="width:100%;height:36px"></audio></div>
+      <div class="discard-row" id="discardRow"><button class="btn btn-ghost btn-sm" id="discardBtn">Supprimer l'enregistrement</button></div>
+    </div>
+
+    <!-- Section 2: Quick Talk -->
+    <div class="card">
+      <div class="section-title">Fichier Quick Talk</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="audio/*,.m4a,.mp3,.wav,.ogg,.webm,.aac">
+        <div style="font-size:1.5rem">🎤</div>
+        <div class="lbl">Déposer ou cliquer pour ajouter</div>
+        <div class="hint">MP3, M4A, WAV — max 25 MB</div>
+      </div>
+      <div class="file-row" id="fileRow">
+        <span class="fname" id="fname"></span>
+        <span class="fsize" id="fsize"></span>
+        <button class="remove" id="removeBtn" title="Retirer">&times;</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="submitBtn" disabled>Envoyer le compte rendu</button>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  var MAX_SIZE = 25 * 1024 * 1024;
+  var $ = function(id) { return document.getElementById(id); };
+
+  // --- Parse URL params ---
+  var params = new URLSearchParams(window.location.search);
+
+  function b64(s) { try { return atob(decodeURIComponent(s)); } catch(e) { return ''; } }
+
+  var webhookUrl = params.get('webhook') ? b64(params.get('webhook')) : '';
+  var rowNumber = params.get('row') || '';
+  var contactName = decodeURIComponent(params.get('name') || '');
+  var contactEmail = decodeURIComponent(params.get('email') || '');
+
+  // rowData complet passé en base64
+  var rowData = {};
+  if (params.get('rowData')) {
+    try { rowData = JSON.parse(b64(params.get('rowData'))); } catch(e) {}
+  }
+
+  if (!webhookUrl || !rowNumber) {
+    $('errorPage').classList.add('visible');
+    return;
+  }
+
+  // Populate UI
+  $('main').style.display = 'block';
+  $('dRow').textContent = rowNumber;
+  $('dName').textContent = contactName || '-';
+  $('dEmail').textContent = contactEmail || '-';
+
+  // --- State ---
+  var mediaRecorder = null;
+  var audioChunks = [];
+  var vocalBlob = null;
+  var quickTalkFile = null;
+  var isRecording = false;
+  var timerInterval = null;
+  var seconds = 0;
+  var sending = false;
+
+  function fmt(sec) {
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function showStatus(type, text) {
+    var el = $('status');
+    el.className = 'status visible ' + type;
+    $('statusIcon').innerHTML = type === 'sending' ? '<span class="spinner"></span>' : (type === 'success' ? '✓' : '✗');
+    $('statusText').textContent = text;
+  }
+
+  function hideStatus() { $('status').className = 'status'; }
+
+  function updateBtn() {
+    $('submitBtn').disabled = (!vocalBlob && !quickTalkFile) || sending;
+  }
+
+  // --- Recording ---
+  function startRec() {
+    vocalBlob = null;
+    $('preview').classList.remove('visible');
+    $('discardRow').classList.remove('visible');
+    hideStatus();
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) {
+        var mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.onstop = function() {
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          vocalBlob = new Blob(audioChunks, { type: mime });
+          $('audio').src = URL.createObjectURL(vocalBlob);
+          $('preview').classList.add('visible');
+          $('discardRow').classList.add('visible');
+          $('recHint').textContent = 'Terminé — ' + fmtBytes(vocalBlob.size);
+          updateBtn();
+        };
+
+        mediaRecorder.start(250);
+        isRecording = true;
+        seconds = 0;
+        $('timer').textContent = fmt(0);
+        $('timer').classList.add('active');
+        $('recHint').textContent = 'Cliquer pour arrêter';
+        $('recBtn').classList.add('recording');
+
+        timerInterval = setInterval(function() {
+          seconds++;
+          $('timer').textContent = fmt(seconds);
+        }, 1000);
+      })
+      .catch(function(err) {
+        showStatus('error', 'Accès au micro refusé. Autorisez le micro dans votre navigateur.');
+      });
+  }
+
+  function stopRec() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    isRecording = false;
+    clearInterval(timerInterval);
+    $('recBtn').classList.remove('recording');
+    $('timer').classList.remove('active');
+  }
+
+  $('recBtn').addEventListener('click', function() {
+    if (sending) return;
+    if (isRecording) stopRec();
+    else {
+      if (vocalBlob) { vocalBlob = null; $('preview').classList.remove('visible'); $('discardRow').classList.remove('visible'); }
+      startRec();
+    }
+  });
+
+  $('discardBtn').addEventListener('click', function() {
+    vocalBlob = null;
+    $('audio').src = '';
+    $('preview').classList.remove('visible');
+    $('discardRow').classList.remove('visible');
+    $('timer').textContent = '0:00';
+    $('recHint').textContent = 'Cliquer pour enregistrer';
+    updateBtn();
+  });
+
+  // --- File upload ---
+  $('fileInput').addEventListener('change', function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    if (f.size > MAX_SIZE) { showStatus('error', 'Fichier trop gros (max 25 MB)'); return; }
+    quickTalkFile = f;
+    $('fname').textContent = f.name;
+    $('fsize').textContent = fmtBytes(f.size);
+    $('fileRow').classList.add('visible');
+    $('uploadZone').style.display = 'none';
+    hideStatus();
+    updateBtn();
+  });
+
+  $('removeBtn').addEventListener('click', function() {
+    quickTalkFile = null;
+    $('fileInput').value = '';
+    $('fileRow').classList.remove('visible');
+    $('uploadZone').style.display = '';
+    updateBtn();
+  });
+
+  // Drag & drop
+  var uz = $('uploadZone');
+  uz.addEventListener('dragover', function(e) { e.preventDefault(); uz.style.borderColor = '#2563eb'; });
+  uz.addEventListener('dragleave', function() { uz.style.borderColor = '#d1d5db'; });
+  uz.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uz.style.borderColor = '#d1d5db';
+    if (e.dataTransfer.files.length) {
+      $('fileInput').files = e.dataTransfer.files;
+      $('fileInput').dispatchEvent(new Event('change'));
+    }
+  });
+
+  // --- Submit ---
+  function readBlob(blob) {
+    return new Promise(function(resolve) {
+      if (!blob) { resolve(''); return; }
+      var r = new FileReader();
+      r.onloadend = function() { resolve(r.result.split(',')[1]); };
+      r.readAsDataURL(blob);
+    });
+  }
+
+  $('submitBtn').addEventListener('click', function() {
+    if (sending) return;
+    sending = true;
+    $('submitBtn').disabled = true;
+    $('submitBtn').innerHTML = '<span class="spinner"></span> Envoi en cours...';
+    showStatus('sending', 'Envoi des données...');
+
+    Promise.all([readBlob(vocalBlob), readBlob(quickTalkFile)])
+      .then(function(results) {
+        var payload = {
+          rowData: rowData,
+          vocal: results[0] || '',
+          vocalMimeType: vocalBlob ? (vocalBlob.type || 'audio/webm') : '',
+          quickTalk: results[1] || '',
+          quickTalkMimeType: quickTalkFile ? (quickTalkFile.type || 'audio/mpeg') : '',
+          quickTalkFileName: quickTalkFile ? quickTalkFile.name : '',
+          timestamp: new Date().toISOString()
+        };
+
+        return fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      })
+      .then(function(resp) {
+        if (!resp.ok) throw new Error('Erreur serveur ' + resp.status);
+        showStatus('success', 'Compte rendu envoyé avec succès !');
+        $('submitBtn').innerHTML = '✓ Envoyé';
+        $('submitBtn').disabled = true;
+        $('recBtn').style.pointerEvents = 'none';
+        $('recBtn').style.opacity = '0.4';
+        $('fileInput').disabled = true;
+
+        setTimeout(function() {
+          if (confirm('Compte rendu envoyé ! Fermer cet onglet ?')) window.close();
+        }, 500);
+      })
+      .catch(function(err) {
+        showStatus('error', 'Échec : ' + err.message);
+        $('submitBtn').innerHTML = 'Réessayer';
+        $('submitBtn').disabled = false;
+        sending = false;
+      });
+  });
+
+  // Prevent accidental close
+  window.addEventListener('beforeunload', function(e) {
+    if (isRecording || ((vocalBlob || quickTalkFile) && !$('submitBtn').innerHTML.includes('Envoyé'))) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
