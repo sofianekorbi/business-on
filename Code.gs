@@ -6,22 +6,38 @@ function onOpen() {
 }
 
 function openSidebar() {
+  // Stocker la sélection actuelle avant d'ouvrir
+  storeCurrentSelection_();
   var html = HtmlService.createHtmlOutputFromFile('Sidebar')
     .setTitle('Business On');
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-// Retourne les infos de la ligne sélectionnée
-function getSelectedRowData() {
-  var sheet = SpreadsheetApp.getActiveSheet();
-  if (sheet.getName() !== 'TRAVAIL') {
-    return { error: 'wrong_sheet' };
-  }
-  var row = SpreadsheetApp.getActiveRange().getRow();
-  if (row <= 1) {
-    return { error: 'header_row' };
-  }
+// Trigger automatique : se déclenche à chaque changement de sélection
+function onSelectionChange(e) {
+  try {
+    var sheet = e.source.getActiveSheet();
+    if (sheet.getName() !== 'TRAVAIL') {
+      PropertiesService.getScriptProperties().setProperty('sidebarData',
+        JSON.stringify({ error: 'wrong_sheet' }));
+      return;
+    }
+    var row = e.range.getRow();
+    if (row <= 1) {
+      PropertiesService.getScriptProperties().setProperty('sidebarData',
+        JSON.stringify({ error: 'header_row' }));
+      return;
+    }
 
+    var data = buildRowData_(sheet, row);
+    PropertiesService.getScriptProperties().setProperty('sidebarData', JSON.stringify(data));
+  } catch (err) {
+    // Silencieux pour le trigger
+  }
+}
+
+// Fonction interne : construit les données d'une ligne
+function buildRowData_(sheet, row) {
   var lastCol = sheet.getLastColumn();
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var values = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
@@ -45,6 +61,43 @@ function getSelectedRowData() {
     statut: statut,
     rowData: rowData
   };
+}
+
+// Stocke la sélection actuelle dans PropertiesService
+function storeCurrentSelection_() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSheet();
+    if (sheet.getName() !== 'TRAVAIL') {
+      PropertiesService.getScriptProperties().setProperty('sidebarData',
+        JSON.stringify({ error: 'wrong_sheet' }));
+      return;
+    }
+    var row = SpreadsheetApp.getActiveRange().getRow();
+    if (row <= 1) {
+      PropertiesService.getScriptProperties().setProperty('sidebarData',
+        JSON.stringify({ error: 'header_row' }));
+      return;
+    }
+    var data = buildRowData_(sheet, row);
+    PropertiesService.getScriptProperties().setProperty('sidebarData', JSON.stringify(data));
+  } catch (err) {}
+}
+
+// Appelé par la sidebar : lit les données stockées (rapide, pas de getActiveRange)
+function getStoredRowData() {
+  var stored = PropertiesService.getScriptProperties().getProperty('sidebarData');
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Appelé par le bouton Rafraîchir : force la lecture + stockage
+function getSelectedRowData() {
+  storeCurrentSelection_();
+  return getStoredRowData();
 }
 
 // Duplique la ligne et met la date du jour

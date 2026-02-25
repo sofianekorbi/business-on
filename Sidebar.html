@@ -348,29 +348,26 @@
       .getRecordingUrl();
   }
 
-  // Auto-refresh chaîné : attend la fin de chaque appel avant le suivant
+  // Polling : lit les données stockées par onSelectionChange (rapide et fiable)
   function poll() {
     google.script.run
       .withSuccessHandler(function(data) {
         if (data) {
           if (data.error && currentRow !== null) {
             onRowData(data);
-          } else if (!data.error) {
-            // Toujours mettre à jour pour refléter les changements de données
-            if (data.row !== currentRow) {
-              onRowData(data);
-            }
+          } else if (!data.error && data.row !== currentRow) {
+            onRowData(data);
           }
         }
-        setTimeout(poll, 1500);
+        setTimeout(poll, 1000);
       })
       .withFailureHandler(function() {
-        setTimeout(poll, 3000);
+        setTimeout(poll, 2000);
       })
-      .getSelectedRowData();
+      .getStoredRowData();
   }
 
-  // Init
+  // Init : refresh force la lecture active, puis le polling lit le cache
   refresh();
   setTimeout(poll, 2000);
 </script>
