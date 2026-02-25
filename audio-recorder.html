@@ -374,6 +374,15 @@
     });
   }
 
+  // Webhook direct hardcodé (évite CORS en passant par formulaire caché)
+  var WEBHOOK = 'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15';
+
+  // Créer un iframe caché pour recevoir la soumission du formulaire
+  var hiddenFrame = document.createElement('iframe');
+  hiddenFrame.name = 'submitFrame';
+  hiddenFrame.style.display = 'none';
+  document.body.appendChild(hiddenFrame);
+
   $('submitBtn').addEventListener('click', function() {
     if (sending) return;
     sending = true;
@@ -393,22 +402,35 @@
           timestamp: new Date().toISOString()
         };
 
-        return fetch(sendUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        });
-      })
-      .then(function(resp) {
-        showStatus('success', 'Compte rendu envoyé avec succès !');
-        $('submitBtn').innerHTML = '✓ Envoyé';
-        $('submitBtn').disabled = true;
-        $('recBtn').style.pointerEvents = 'none';
-        $('recBtn').style.opacity = '0.4';
-        $('fileInput').disabled = true;
+        // Soumission via formulaire caché (pas de CORS)
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = WEBHOOK;
+        form.target = 'submitFrame';
+        form.enctype = 'application/x-www-form-urlencoded';
 
-        setTimeout(function() { window.close(); }, 1500);
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'payload';
+        input.value = JSON.stringify(payload);
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+
+        // On ne peut pas lire la réponse de l'iframe (cross-origin)
+        // mais on sait que le formulaire a été envoyé
+        setTimeout(function() {
+          showStatus('success', 'Compte rendu envoyé avec succès !');
+          $('submitBtn').innerHTML = '✓ Envoyé';
+          $('submitBtn').disabled = true;
+          $('recBtn').style.pointerEvents = 'none';
+          $('recBtn').style.opacity = '0.4';
+          $('fileInput').disabled = true;
+
+          setTimeout(function() { window.close(); }, 1500);
+        }, 2000);
       })
       .catch(function(err) {
         showStatus('error', 'Échec : ' + err.message);
