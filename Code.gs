@@ -14,7 +14,6 @@ function openSidebar() {
 }
 
 // Trigger automatique : se déclenche à chaque changement de sélection
-// Optimisé : ne lit que les colonnes nécessaires pour la sidebar (rapide)
 function onSelectionChange(e) {
   try {
     var sheet = e.source.getActiveSheet();
@@ -30,44 +29,11 @@ function onSelectionChange(e) {
       return;
     }
 
-    var data = buildRowDataLight_(sheet, row);
+    var data = buildRowData_(sheet, row);
     PropertiesService.getScriptProperties().setProperty('sidebarData', JSON.stringify(data));
   } catch (err) {
     // Silencieux pour le trigger
   }
-}
-
-// Version légère : lit seulement les colonnes nécessaires pour la sidebar
-function buildRowDataLight_(sheet, row) {
-  var headers = getCachedHeaders_(sheet);
-  var lastCol = headers.length;
-  var values = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
-
-  var nom = '';
-  var email = '';
-  var societe = '';
-  var statut = '';
-
-  for (var i = 0; i < headers.length; i++) {
-    var h = headers[i];
-    if (h === 'PRENOM') nom = (values[i] || '').toString();
-    else if (h === 'Nom') nom = (nom ? nom + ' ' : '') + (values[i] || '').toString();
-    else if (h === 'E-mail') email = (values[i] || '').toString().trim();
-    else if (h === 'Société' || h === 'Societe') societe = (values[i] || '').toString().trim();
-    else if (h === 'STATUTS') statut = (values[i] || '').toString().trim();
-  }
-
-  return { row: row, nom: nom.trim(), email: email, societe: societe, statut: statut };
-}
-
-// Cache les headers pour éviter de relire la ligne 1 à chaque sélection
-var headersCache_ = null;
-function getCachedHeaders_(sheet) {
-  if (!headersCache_) {
-    var lastCol = sheet.getLastColumn();
-    headersCache_ = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  }
-  return headersCache_;
 }
 
 // Fonction interne : construit les données d'une ligne
@@ -170,6 +136,14 @@ function dupliquerLigne() {
     }
   }
 
+  // Vider le statut de la nouvelle ligne
+  for (var k = 0; k < headers.length; k++) {
+    if (headers[k] === 'STATUTS') {
+      sheet.getRange(row + 1, k + 1).setValue('');
+      break;
+    }
+  }
+
   SpreadsheetApp.flush();
 
   // Sélectionner la nouvelle ligne
@@ -195,11 +169,12 @@ function getRecordingUrl() {
 
   var rowData = {};
   for (var i = 0; i < headers.length; i++) {
-    if (headers[i]) rowData[headers[i]] = values[i];
+      if (headers[i] && headers[i] !== 'Commentaire') rowData[headers[i]] = values[i];  
   }
   rowData['_rowNumber'] = row;
+  rowData['spreadsheetUrl'] = SpreadsheetApp.getActiveSpreadsheet().getUrl();
 
-  var EXTERNAL_PAGE = 'https://sofianekorbi.github.io/business-on/audio-recorder.html';
+  var EXTERNAL_PAGE = 'https://business-on.bkbx.io/form';
   var rowDataB64 = Utilities.base64Encode(JSON.stringify(rowData));
 
   var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
@@ -218,12 +193,17 @@ function getRecordingUrl() {
 function doPost(e) {
   var WEBHOOK_URL = 'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15';
 
+    // Ajouter l'URL du Google Sheet au payload
+      var payload = JSON.parse(e.postData.contents);
+        payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+          var payloadWithUrl = JSON.stringify(payload);
+
   var response = UrlFetchApp.fetch(WEBHOOK_URL, {
     method: 'post',
     contentType: 'application/json',
-    payload: e.postData.contents,
+    payload: payloadWithUrl,
     muteHttpExceptions: true
-  });
+    });
 
   var code = response.getResponseCode();
   var output = ContentService.createTextOutput(
@@ -234,6 +214,8 @@ function doPost(e) {
 }
 
 function sendToWebhook(payload) {
+    // Ajouter l'URL du Google Sheet au payload
+      payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
   var response = UrlFetchApp.fetch(
     'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15',
     {

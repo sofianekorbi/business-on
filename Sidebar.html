@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Google Sans', Arial, sans-serif;
       background: #f9fafb;
@@ -20,11 +26,13 @@
       padding: 16px 18px;
       flex-shrink: 0;
     }
+
     .header h1 {
       font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.3px;
     }
+
     .header p {
       font-size: 11px;
       color: #9ca3af;
@@ -40,6 +48,7 @@
       border: 1px solid #e5e7eb;
       flex-shrink: 0;
     }
+
     .contact-card .row-badge {
       display: inline-block;
       background: #2563eb;
@@ -50,21 +59,25 @@
       border-radius: 9999px;
       margin-bottom: 6px;
     }
+
     .contact-card .name {
       font-size: 15px;
       font-weight: 600;
       color: #111827;
     }
+
     .contact-card .email {
       font-size: 12px;
       color: #6b7280;
       margin-top: 1px;
     }
+
     .contact-card .meta-row {
       display: flex;
       gap: 8px;
       margin-top: 8px;
     }
+
     .contact-card .tag {
       font-size: 10px;
       font-weight: 500;
@@ -85,8 +98,16 @@
       text-align: center;
       color: #9ca3af;
     }
-    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
-    .empty-state p { font-size: 13px; line-height: 1.5; }
+
+    .empty-state .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      line-height: 1.5;
+    }
 
     /* Actions */
     .actions {
@@ -111,23 +132,34 @@
       transition: all 0.15s;
       justify-content: center;
     }
+
     .btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
+
     .btn-primary {
       background: #111827;
       color: white;
     }
-    .btn-primary:hover:not(:disabled) { background: #1f2937; }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1f2937;
+    }
+
     .btn-secondary {
       background: #fff;
       color: #374151;
       border: 1px solid #e5e7eb;
     }
-    .btn-secondary:hover:not(:disabled) { background: #f3f4f6; }
 
-    .btn .icon { font-size: 15px; }
+    .btn-secondary:hover:not(:disabled) {
+      background: #f3f4f6;
+    }
+
+    .btn .icon {
+      font-size: 15px;
+    }
 
     /* Status */
     .status {
@@ -139,10 +171,25 @@
       display: none;
       text-align: center;
     }
-    .status.visible { display: block; }
-    .status.success { background: #d1fae5; color: #065f46; }
-    .status.error { background: #fee2e2; color: #991b1b; }
-    .status.info { background: #eff6ff; color: #1e40af; }
+
+    .status.visible {
+      display: block;
+    }
+
+    .status.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status.info {
+      background: #eff6ff;
+      color: #1e40af;
+    }
 
     /* Footer */
     .footer {
@@ -150,6 +197,7 @@
       padding: 12px;
       flex-shrink: 0;
     }
+
     .refresh-btn {
       width: 100%;
       padding: 8px;
@@ -161,7 +209,11 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-    .refresh-btn:hover { border-color: #9ca3af; color: #6b7280; }
+
+    .refresh-btn:hover {
+      border-color: #9ca3af;
+      color: #6b7280;
+    }
 
     /* Loading */
     .loading {
@@ -171,9 +223,13 @@
       font-size: 12px;
       color: #6b7280;
     }
-    .loading.visible { display: block; }
+
+    .loading.visible {
+      display: block;
+    }
   </style>
 </head>
+
 <body>
 
   <div class="header">
@@ -213,164 +269,165 @@
     <button class="refresh-btn" onclick="refresh()">↻ Rafraîchir</button>
   </div>
 
-<script>
-  var currentRow = null;
+  <script>
+    var currentRow = null;
 
-  function showStatus(msg, type) {
-    var el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = 'status visible ' + type;
-    if (type === 'success' || type === 'info') {
-      setTimeout(function() { el.className = 'status'; }, 3000);
+      function showStatus(msg, type) {
+        var el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = 'status visible ' + type;
+        if (type === 'success' || type === 'info') {
+        setTimeout(function () { el.className = 'status'; }, 3000);
+      }
     }
-  }
 
-  function hideStatus() {
-    document.getElementById('status').className = 'status';
-  }
+      function hideStatus() {
+        document.getElementById('status').className = 'status';
+      }
 
-  function setLoading(on) {
-    document.getElementById('loading').className = on ? 'loading visible' : 'loading';
-  }
+      function setLoading(on) {
+        document.getElementById('loading').className = on ? 'loading visible' : 'loading';
+      }
 
-  function refresh() {
-    hideStatus();
-    setLoading(true);
-    google.script.run
-      .withSuccessHandler(onRowData)
-      .withFailureHandler(function(err) {
+      function refresh() {
+        hideStatus();
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler(onRowData)
+        .withFailureHandler(function (err) {
+          setLoading(false);
+          showStatus('Erreur : ' + err.message, 'error');
+        })
+        .getSelectedRowData();
+    }
+
+      function onRowData(data) {
         setLoading(false);
-        showStatus('Erreur : ' + err.message, 'error');
-      })
-      .getSelectedRowData();
-  }
 
-  function onRowData(data) {
-    setLoading(false);
+      if (!data || data.error === 'wrong_sheet') {
+        document.getElementById('emptyState').style.display = 'flex';
+        document.getElementById('emptyState').querySelector('p').innerHTML = 'Passez sur l\'onglet<br><b>TRAVAIL</b>';
+        document.getElementById('contactCard').style.display = 'none';
+        document.getElementById('actionsBlock').style.display = 'none';
+        currentRow = null;
+        return;
+      }
 
-    if (!data || data.error === 'wrong_sheet') {
-      document.getElementById('emptyState').style.display = 'flex';
-      document.getElementById('emptyState').querySelector('p').innerHTML = 'Passez sur l\'onglet<br><b>TRAVAIL</b>';
-      document.getElementById('contactCard').style.display = 'none';
-      document.getElementById('actionsBlock').style.display = 'none';
-      currentRow = null;
-      return;
+      if (data.error === 'header_row') {
+        document.getElementById('emptyState').style.display = 'flex';
+        document.getElementById('emptyState').querySelector('p').innerHTML = 'Sélectionnez une ligne<br>dans l\'onglet TRAVAIL';
+        document.getElementById('contactCard').style.display = 'none';
+        document.getElementById('actionsBlock').style.display = 'none';
+        currentRow = null;
+        return;
+      }
+
+      currentRow = data.row;
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('contactCard').style.display = 'block';
+      document.getElementById('actionsBlock').style.display = 'flex';
+
+      document.getElementById('rowNum').textContent = data.row;
+      document.getElementById('contactName').textContent = data.nom || '-';
+      document.getElementById('contactEmail').textContent = data.email || '-';
+
+      var societeEl = document.getElementById('contactSociete');
+      if (data.societe) {
+        societeEl.textContent = data.societe;
+        societeEl.style.display = 'inline-block';
+      } else {
+        societeEl.style.display = 'none';
+      }
+
+      var statutEl = document.getElementById('contactStatut');
+      if (data.statut) {
+        statutEl.textContent = data.statut;
+        statutEl.style.display = 'inline-block';
+      } else {
+        statutEl.style.display = 'none';
+      }
     }
 
-    if (data.error === 'header_row') {
-      document.getElementById('emptyState').style.display = 'flex';
-      document.getElementById('emptyState').querySelector('p').innerHTML = 'Sélectionnez une ligne<br>dans l\'onglet TRAVAIL';
-      document.getElementById('contactCard').style.display = 'none';
-      document.getElementById('actionsBlock').style.display = 'none';
-      currentRow = null;
-      return;
-    }
+      function dupliquer() {
+        var btn = document.getElementById('btnDupliquer');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="icon">⏳</span> Duplication...';
+        hideStatus();
 
-    currentRow = data.row;
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('contactCard').style.display = 'block';
-    document.getElementById('actionsBlock').style.display = 'flex';
-
-    document.getElementById('rowNum').textContent = data.row;
-    document.getElementById('contactName').textContent = data.nom || '-';
-    document.getElementById('contactEmail').textContent = data.email || '-';
-
-    var societeEl = document.getElementById('contactSociete');
-    if (data.societe) {
-      societeEl.textContent = data.societe;
-      societeEl.style.display = 'inline-block';
-    } else {
-      societeEl.style.display = 'none';
-    }
-
-    var statutEl = document.getElementById('contactStatut');
-    if (data.statut) {
-      statutEl.textContent = data.statut;
-      statutEl.style.display = 'inline-block';
-    } else {
-      statutEl.style.display = 'none';
-    }
-  }
-
-  function dupliquer() {
-    var btn = document.getElementById('btnDupliquer');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="icon">⏳</span> Duplication...';
-    hideStatus();
-
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result.error) {
-          showStatus(result.error, 'error');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (result.error) {
+            showStatus(result.error, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
+            return;
+          }
+          showStatus('Ligne dupliquée → ligne ' + result.newRow, 'success');
           btn.disabled = false;
           btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
-          return;
-        }
-        showStatus('Ligne dupliquée → ligne ' + result.newRow, 'success');
-        btn.disabled = false;
-        btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
-        // Rafraîchir pour afficher la nouvelle ligne
-        setTimeout(refresh, 500);
-      })
-      .withFailureHandler(function(err) {
-        showStatus('Erreur : ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
-      })
-      .dupliquerLigne();
-  }
+          // Rafraîchir pour afficher la nouvelle ligne
+          setTimeout(refresh, 500);
+        })
+        .withFailureHandler(function (err) {
+          showStatus('Erreur : ' + err.message, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="icon">📋</span> Dupliquer la ligne';
+        })
+        .dupliquerLigne();
+    }
 
-  function genererCR() {
-    var btn = document.getElementById('btnGenerer');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="icon">⏳</span> Ouverture...';
-    hideStatus();
+      function genererCR() {
+        var btn = document.getElementById('btnGenerer');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="icon">⏳</span> Ouverture...';
+        hideStatus();
 
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result.error) {
-          showStatus(result.error, 'error');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (result.error) {
+            showStatus(result.error, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
+            return;
+          }
+          // Ouvrir la page d'enregistrement
+          window.open(result.url, '_blank');
+          showStatus('Page ouverte pour la ligne ' + result.row, 'info');
           btn.disabled = false;
           btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
-          return;
-        }
-        // Ouvrir la page d'enregistrement
-        window.open(result.url, '_blank');
-        showStatus('Page ouverte pour la ligne ' + result.row, 'info');
-        btn.disabled = false;
-        btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
-      })
-      .withFailureHandler(function(err) {
-        showStatus('Erreur : ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
-      })
-      .getRecordingUrl();
-  }
+        })
+        .withFailureHandler(function (err) {
+          showStatus('Erreur : ' + err.message, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="icon">🎙️</span> Générer le compte rendu';
+        })
+        .getRecordingUrl();
+    }
 
-  // Polling : lit les données stockées par onSelectionChange (rapide et fiable)
-  function poll() {
-    google.script.run
-      .withSuccessHandler(function(data) {
-        if (data) {
-          if (data.error && currentRow !== null) {
-            onRowData(data);
-          } else if (!data.error && data.row !== currentRow) {
-            onRowData(data);
+      // Polling : lit les données stockées par onSelectionChange (rapide et fiable)
+      function poll() {
+        google.script.run
+        .withSuccessHandler(function (data) {
+          if (data) {
+            if (data.error && currentRow !== null) {
+              onRowData(data);
+            } else if (!data.error && data.row !== currentRow) {
+              onRowData(data);
+            }
           }
-        }
-        setTimeout(poll, 500);
-      })
-      .withFailureHandler(function() {
-        setTimeout(poll, 1500);
-      })
-      .getStoredRowData();
-  }
+          setTimeout(poll, 500);
+        })
+        .withFailureHandler(function () {
+          setTimeout(poll, 1500);
+        })
+        .getStoredRowData();
+    }
 
-  // Init : refresh force la lecture active, puis le polling lit le cache
-  refresh();
-  setTimeout(poll, 2000);
-</script>
+      // Init : refresh force la lecture active, puis le polling lit le cache
+      refresh();
+      setTimeout(poll, 2000);
+    </script>
 
 </body>
+
 </html>
