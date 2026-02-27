@@ -272,28 +272,28 @@
   <script>
     var currentRow = null;
 
-      function showStatus(msg, type) {
-        var el = document.getElementById('status');
-        el.textContent = msg;
-        el.className = 'status visible ' + type;
-        if (type === 'success' || type === 'info') {
+    function showStatus(msg, type) {
+      var el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status visible ' + type;
+      if (type === 'success' || type === 'info') {
         setTimeout(function () { el.className = 'status'; }, 3000);
       }
     }
 
-      function hideStatus() {
-        document.getElementById('status').className = 'status';
-      }
+    function hideStatus() {
+      document.getElementById('status').className = 'status';
+    }
 
-      function setLoading(on) {
-        document.getElementById('loading').className = on ? 'loading visible' : 'loading';
-      }
+    function setLoading(on) {
+      document.getElementById('loading').className = on ? 'loading visible' : 'loading';
+    }
 
-      function refresh() {
-        hideStatus();
-        setLoading(true);
-        google.script.run
-          .withSuccessHandler(onRowData)
+    function refresh() {
+      hideStatus();
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onRowData)
         .withFailureHandler(function (err) {
           setLoading(false);
           showStatus('Erreur : ' + err.message, 'error');
@@ -301,8 +301,8 @@
         .getSelectedRowData();
     }
 
-      function onRowData(data) {
-        setLoading(false);
+    function onRowData(data) {
+      setLoading(false);
 
       if (!data || data.error === 'wrong_sheet') {
         document.getElementById('emptyState').style.display = 'flex';
@@ -348,11 +348,11 @@
       }
     }
 
-      function dupliquer() {
-        var btn = document.getElementById('btnDupliquer');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="icon">⏳</span> Duplication...';
-        hideStatus();
+    function dupliquer() {
+      var btn = document.getElementById('btnDupliquer');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="icon">⏳</span> Duplication...';
+      hideStatus();
 
       google.script.run
         .withSuccessHandler(function (result) {
@@ -376,11 +376,11 @@
         .dupliquerLigne();
     }
 
-      function genererCR() {
-        var btn = document.getElementById('btnGenerer');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="icon">⏳</span> Ouverture...';
-        hideStatus();
+    function genererCR() {
+      var btn = document.getElementById('btnGenerer');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="icon">⏳</span> Ouverture...';
+      hideStatus();
 
       google.script.run
         .withSuccessHandler(function (result) {
@@ -404,9 +404,9 @@
         .getRecordingUrl();
     }
 
-      // Polling : lit les données stockées par onSelectionChange (rapide et fiable)
-      function poll() {
-        google.script.run
+    // Polling : lit les données stockées par onSelectionChange (rapide et fiable)
+    function poll() {
+      google.script.run
         .withSuccessHandler(function (data) {
           if (data) {
             if (data.error && currentRow !== null) {
@@ -423,10 +423,10 @@
         .getStoredRowData();
     }
 
-      // Init : refresh force la lecture active, puis le polling lit le cache
-      refresh();
-      setTimeout(poll, 2000);
-    </script>
+    // Init : refresh force la lecture active, puis le polling lit le cache
+    refresh();
+    setTimeout(poll, 2000);
+  </script>
 
 </body>
 

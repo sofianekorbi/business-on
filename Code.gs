@@ -48,7 +48,7 @@ function buildRowData_(sheet, row) {
   }
   rowData['_rowNumber'] = row;
 
-  var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
+  var nom = ((rowData['Prenom'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
   var email = (rowData['E-mail'] || '').toString().trim();
   var societe = (rowData['Société'] || rowData['Societe'] || '').toString().trim();
   var statut = (rowData['STATUTS'] || '').toString().trim();
@@ -173,11 +173,12 @@ function getRecordingUrl() {
   }
   rowData['_rowNumber'] = row;
   rowData['spreadsheetUrl'] = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  rowData['sheetID'] = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getSheetId();
 
   var EXTERNAL_PAGE = 'https://business-on.bkbx.io/form';
   var rowDataB64 = Utilities.base64Encode(JSON.stringify(rowData));
 
-  var nom = ((rowData['PRENOM'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
+  var nom = ((rowData['Prenom'] || '') + ' ' + (rowData['Nom'] || '')).toString().trim();
   var email = (rowData['E-mail'] || '').toString().trim();
 
   var url = EXTERNAL_PAGE
@@ -193,10 +194,12 @@ function getRecordingUrl() {
 function doPost(e) {
   var WEBHOOK_URL = 'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15';
 
-    // Ajouter l'URL du Google Sheet au payload
-      var payload = JSON.parse(e.postData.contents);
-        payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
-          var payloadWithUrl = JSON.stringify(payload);
+  // Ajouter l'URL du Google Sheet au payload
+  var payload = JSON.parse(e.postData.contents);
+  payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  payload.sheetID = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getSheetId();
+
+  var payloadWithUrl = JSON.stringify(payload);
 
   var response = UrlFetchApp.fetch(WEBHOOK_URL, {
     method: 'post',
@@ -214,8 +217,8 @@ function doPost(e) {
 }
 
 function sendToWebhook(payload) {
-    // Ajouter l'URL du Google Sheet au payload
-      payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  payload.spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  payload.sheetID = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getSheetId();
   var response = UrlFetchApp.fetch(
     'https://business-on.bkbx.io/webhook/26a15343-e911-4400-a918-b3cf06074f15',
     {
